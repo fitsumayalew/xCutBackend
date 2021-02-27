@@ -17,8 +17,10 @@ app.use(helmet())
 app.use(mongoSanitize())
 app.use(bodyParser.json());
 
+
 // connect to DB
 connectDB();
+
 
 // handle CORS
 app.use((req, res, next) => {
@@ -41,3 +43,5 @@ app.use((req, res, next) => {
 })
 
 app.listen(process.env.SERVER_PORT || 8080);
+
+console.log("API running on port: " + process.env.SERVER_PORT || 8080);

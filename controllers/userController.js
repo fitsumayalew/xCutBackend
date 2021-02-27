@@ -2,18 +2,27 @@ const bcrypt = require('bcrypt');
 const User = require('../model/User');
 const BarberShop = require('../model/BarberShop');
 const asyncHandler = require('../middleware/asyncHandler');
+var mongoose = require('mongoose');
 
 
 exports.getProfile = asyncHandler(async(req, res, next) => {
     let id = req.user.id
+    let names = [];
+
 
     let user = await User.findById(id)
+
+    let barberShops = await BarberShop.find({ _id: { $in: user.favorites } }, { name: 1, _id: 0 })
+    barberShops.map((barberShop) => { names.push(barberShop.name) })
+
     if (!user) {
         return res.status(201).json({
             status: true,
             msg: 'User profile not found'
         })
     }
+
+    user.favorites = names;
 
     return res.status(201).json({
         status: true,
@@ -81,7 +90,7 @@ exports.addFavorite = asyncHandler(async(req, res, next) => {
     let id = req.user.id
     let barberShopId = req.params.barberShopId;
 
-    let barberShop = await BarberShop.findOne({ _id: barberShopId })
+    let barberShop = await BarberShop.findById(mongoose.Types.ObjectId(barberShopId))
 
     if (!barberShop) {
         return res.status(200).json({
@@ -90,7 +99,19 @@ exports.addFavorite = asyncHandler(async(req, res, next) => {
         })
     }
 
-    let user = await User.findOneAndUpdate(id, { $push: { favorites: barberShop.name } }, { new: true })
+    let check = await User.find({ favorites: { $elemMatch: { id: barberShopId } } })
+
+    if (check[0]) {
+        return res.status(200).json({
+            status: false,
+            msg: 'Already added to favorites'
+        })
+    }
+
+    let user = await User.findById(mongoose.Types.ObjectId(id));
+
+
+    user = await User.findOneAndUpdate(id, { $push: { favorites: { id: barberShopId, name: barberShop.name } } }, { new: true })
 
     if (!user) {
         return res.status(200).json({
@@ -142,6 +163,23 @@ exports.setAppointment = asyncHandler(async(req, res, next) => {
     })
 })
 
+exports.getAppointments = asyncHandler(async(req, res, next) => {
+    let id = req.user.id
+
+    let barberShops = await BarberShop.find({ appointments: { $elemMatch: { $eq: mongoose.Types.ObjectId(id) } } }, { name: 1 })
+    if (!barberShops) {
+        return res.status(200).json({
+            status: false,
+            msg: `No appointments yet`
+        })
+    }
+
+    return res.status(200).json({
+        status: true,
+        data: barberShops,
+    })
+})
+
 exports.addReview = asyncHandler(async(req, res, next) => {
     const { id, email } = req.user
     const barberShopId = req.params.barberShopId
@@ -171,14 +209,14 @@ exports.removeFavorite = asyncHandler(async(req, res, next) => {
     let barberShopId = req.params.barberShopId;
 
 
-    let barberShop = await BarberShop.findById(barberShopId)
+    // let barberShop = await BarberShop.findById(barberShopId)
 
-    if (!barberShop) {
-        return res.status(200).json({
-            status: false,
-            msg: `Barbershop not found`
-        })
-    }
+    // if (!barberShop) {
+    //     return res.status(200).json({
+    //         status: false,
+    //         msg: `Barbershop not found`
+    //     })
+    // }
 
     let user = await User.findByIdAndUpdate(id, { $pull: { favorites: barberShopId } })
 
@@ -235,6 +273,14 @@ exports.deleteAppointment = asyncHandler(async(req, res, next) => {
 exports.deleteReview = asyncHandler(async(req, res, next) => {
     let id = req.user.id
     let barberShopId = req.params.barberShopId;
+    console.log('from delete');
+    console.log('from delete');
+    console.log('from delete');
+    console.log('from delete');
+    console.log('from delete');
+    console.log('from delete');
+    console.log('from delete');
+    console.log('from delete');
 
     // @ts-ignore
     let barberShop = await BarberShop.findByIdAndUpdate(barberShopId, { $pull: { review: { user: id }, rating: { user: id } } })
@@ -247,6 +293,7 @@ exports.deleteReview = asyncHandler(async(req, res, next) => {
     }
 
     let barberShops = await BarberShop.find()[0]
+    console.log('from delete', barberShop);
 
     return res.status(201).json({
         status: true,

@@ -20,6 +20,8 @@ router.post('/addReview/:barberShopId', isAuth, userController.addReview)
 // merged with review
 // router.post('/addRating/:barberShopId', isAuth, userController.addRating)
 
+router.get('/getAppointments', isAuth, userController.getAppointments)
+
 router.delete('/removeFavorite/:barberShopId', isAuth, userController.removeFavorite)
 
 router.delete('/deleteAppointment/:barberShopId', isAuth, userController.deleteAppointment)
